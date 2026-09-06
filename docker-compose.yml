@@ -1,0 +1,53 @@
+# STEMWISE local development stack (spec §85).
+# Production MongoDB credentials must NEVER be committed. This is local-only.
+services:
+  mongo:
+    image: mongo:7
+    container_name: stemwise-mongo
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    volumes:
+      - stemwise_mongo_data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: ./backend
+    container_name: stemwise-api
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      PORT: 3000
+      NODE_ENV: development
+      DATABASE_URL: mongodb://mongo:27017/stemwise
+      CORS_ORIGIN: 'http://localhost:8080,http://localhost:3000'
+      JWT_ACCESS_SECRET: dev-access-secret-change-me
+      JWT_REFRESH_SECRET: dev-refresh-secret-change-me
+      JWT_ACCESS_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+    ports:
+      - '3000:3000'
+
+  # Optional: DB browser for LOCAL DEVELOPMENT ONLY (spec §85).
+  mongo-express:
+    image: mongo-express:1
+    container_name: stemwise-mongo-express
+    restart: unless-stopped
+    profiles: ['tools']
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://mongo:27017
+      ME_CONFIG_BASICAUTH: 'false'
+    ports:
+      - '8081:8081'
+
+volumes:
+  stemwise_mongo_data:
