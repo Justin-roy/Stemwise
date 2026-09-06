@@ -31,7 +31,7 @@ export class ProfilesService {
     return profile;
   }
 
-  deleteByUserId(userId: string) {
-    return this.model.deleteOne({ userId: new Types.ObjectId(userId) }).exec();
+  async deleteByUserId(userId: string): Promise<void> {
+    await this.model.deleteOne({ userId: new Types.ObjectId(userId) }).exec();
   }
 }
